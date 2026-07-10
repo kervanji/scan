@@ -1,0 +1,108 @@
+.status-dot {
+    -fx-min-width: 12;
+    -fx-min-height: 12;
+    -fx-max-width: 12;
+    -fx-max-height: 12;
+    -fx-background-radius: 6;
+}
+
+.status-dot-online {
+    -fx-background-color: #22c55e;
+}
+
+.status-dot-offline {
+    -fx-background-color: #ef4444;
+}
+
+.status-dot-warning {
+    -fx-background-color: #f59e0b;
+}
+
+.root-pane {
+    -fx-background-color: #f8fafc;
+    -fx-padding: 20;
+}
+
+.title-label {
+    -fx-font-size: 24px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1e293b;
+}
+
+.subtitle-label {
+    -fx-font-size: 16px;
+    -fx-text-fill: #64748b;
+}
+
+.camera-view {
+    -fx-border-color: #cbd5e1;
+    -fx-border-width: 2;
+    -fx-border-radius: 8;
+    -fx-background-radius: 8;
+    -fx-background-color: #0f172a;
+}
+
+.btn-checkin {
+    -fx-background-color: #16a34a;
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-padding: 12 24;
+    -fx-background-radius: 8;
+}
+
+.btn-checkin:selected, .btn-checkin:focused {
+    -fx-background-color: #15803d;
+    -fx-effect: dropshadow(gaussian, #16a34a, 10, 0.4, 0, 0);
+}
+
+.btn-checkout {
+    -fx-background-color: #dc2626;
+    -fx-text-fill: white;
+    -fx-font-size: 16px;
+    -fx-padding: 12 24;
+    -fx-background-radius: 8;
+}
+
+.btn-checkout:selected, .btn-checkout:focused {
+    -fx-background-color: #b91c1c;
+    -fx-effect: dropshadow(gaussian, #dc2626, 10, 0.4, 0, 0);
+}
+
+.btn-admin {
+    -fx-background-color: #2563eb;
+    -fx-text-fill: white;
+    -fx-padding: 8 16;
+    -fx-background-radius: 6;
+}
+
+.message-success {
+    -fx-text-fill: #16a34a;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+}
+
+.message-error {
+    -fx-text-fill: #dc2626;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+}
+
+.status-bar {
+    -fx-background-color: #e2e8f0;
+    -fx-padding: 8 12;
+    -fx-background-radius: 6;
+}
+
+.table-view {
+    -fx-background-radius: 8;
+}
+
+.form-field {
+    -fx-pref-width: 280;
+}
+
+.ltr-field {
+    -fx-text-alignment: left;
+    -fx-font-family: "Menlo", "Consolas", "Monaco", monospace;
+    -fx-font-size: 13px;
+}

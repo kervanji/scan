@@ -1,0 +1,8 @@
+{
+  "version": "1.0.0",
+  "downloadUrl": "https://github.com/YOUR_USER/qr-attendance/releases/download/v1.0.0/qr-attendance-1.0.0.jar",
+  "sha256": "",
+  "releaseNotes": "النسخة الأولى",
+  "mandatory": false,
+  "minVersion": "1.0.0"
+}
