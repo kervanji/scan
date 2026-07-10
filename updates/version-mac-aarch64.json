@@ -1,0 +1,8 @@
+{
+  "version": "1.0.0",
+  "downloadUrl": "https://github.com/kervanji/scan/releases/download/v1.0.0/qr-attendance-1.0.0-mac-aarch64.zip",
+  "sha256": "235469cc4fbf079dbc8f26a086936fed11346107fa432fbf93d0bb8947463131",
+  "releaseNotes": "Release v1.0.0 (mac-aarch64)",
+  "mandatory": false,
+  "minVersion": "1.0.0"
+}

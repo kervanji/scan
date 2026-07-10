@@ -93,9 +93,9 @@ jpackage --input target \
 
 ## التحديث التلقائي عن بُعد
 
-راجع **[UPDATE_GUIDE_AR.md](UPDATE_GUIDE_AR.md)** — دليل كامل لربط GitHub ونشر التحديثات للعملاء.
+راجع **[UPDATE_GUIDE_AR.md](UPDATE_GUIDE_AR.md)** و **[RELEASE.md](RELEASE.md)**.
 
-ملخص: ارفع `updates/version.json` + JAR إلى GitHub، والتطبيق يحدّث نفسه تلقائيًا.
+المستودع: `kervanji/scan` — التحديث التلقائي مُدمج افتراضياً.
 
 ## ملاحظات macOS
 

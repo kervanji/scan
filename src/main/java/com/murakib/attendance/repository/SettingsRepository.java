@@ -49,8 +49,8 @@ public class SettingsRepository {
         DEFAULTS.put(KIOSK_MODE, "false");
         DEFAULTS.put(AUTO_UPDATE_ENABLED, "true");
         DEFAULTS.put(AUTO_UPDATE_INSTALL, "false");
-        DEFAULTS.put(UPDATE_MANIFEST_URL, "");
-        DEFAULTS.put(UPDATE_GITHUB_REPO, "");
+        DEFAULTS.put(UPDATE_MANIFEST_URL, "https://raw.githubusercontent.com/kervanji/scan/main/updates/version.json");
+        DEFAULTS.put(UPDATE_GITHUB_REPO, "kervanji/scan");
         DEFAULTS.put(UPDATE_GITHUB_TOKEN, "");
         DEFAULTS.put(UPDATE_CHECK_INTERVAL_HOURS, "6");
         DEFAULTS.put(LAST_UPDATE_CHECK, "");

@@ -35,4 +35,8 @@ public final class AppVersion {
     public static String defaultManifestUrl() {
         return PROPS.getProperty("update.default.manifest.url", "").trim();
     }
+
+    public static String defaultGithubRepo() {
+        return PROPS.getProperty("update.default.github.repo", "").trim();
+    }
 }

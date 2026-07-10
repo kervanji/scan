@@ -1,0 +1,9 @@
+services:
+  release-win:
+    build:
+      context: .
+      args:
+        PLATFORM: win
+    volumes:
+      - ./release-output:/out/release-output
+    command: sh -c "cp -r release-output/* /out/release-output/ 2>/dev/null || true; cp updates/version.json /out/release-output/ 2>/dev/null || true; ls -la /out/release-output/"

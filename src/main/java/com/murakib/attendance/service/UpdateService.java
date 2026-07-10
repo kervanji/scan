@@ -197,15 +197,20 @@ public class UpdateService {
         UpdateManifest manifest = new UpdateManifest();
         manifest.setVersion(extractJsonString(body, "tag_name").replaceFirst("^v", ""));
         manifest.setReleaseNotes(extractJsonString(body, "body"));
-        manifest.setDownloadUrl(findJarAssetUrl(body));
+        manifest.setDownloadUrl(findReleaseAssetUrl(body));
         return manifest;
     }
 
-    private String findJarAssetUrl(String releasesJson) {
-        Pattern assetPattern = Pattern.compile("\"browser_download_url\"\\s*:\\s*\"([^\"]+\\.jar)\"");
-        Matcher m = assetPattern.matcher(releasesJson);
-        if (m.find()) {
-            return m.group(1).replace("\\/", "/");
+    private String findReleaseAssetUrl(String releasesJson) {
+        Pattern zipPattern = Pattern.compile("\"browser_download_url\"\\s*:\\s*\"([^\"]+\\.zip)\"");
+        Matcher zm = zipPattern.matcher(releasesJson);
+        if (zm.find()) {
+            return zm.group(1).replace("\\/", "/");
+        }
+        Pattern jarPattern = Pattern.compile("\"browser_download_url\"\\s*:\\s*\"([^\"]+\\.jar)\"");
+        Matcher jm = jarPattern.matcher(releasesJson);
+        if (jm.find()) {
+            return jm.group(1).replace("\\/", "/");
         }
         return "";
     }
