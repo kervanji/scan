@@ -2,7 +2,7 @@
 <launch4jConfig>
   <dontWrapJar>false</dontWrapJar>
   <headerType>gui</headerType>
-  <jar>target\qr-attendance-1.0.2.jar</jar>
+  <jar>target\qr-attendance-1.0.3.jar</jar>
   <outfile>target\Murakib Attendance.exe</outfile>
   <errTitle>Murakib Attendance</errTitle>
   <cmdLine></cmdLine>
@@ -15,7 +15,7 @@
   <manifest></manifest>
   <classPath>
     <mainClass>com.murakib.attendance.Main</mainClass>
-    <cp>qr-attendance-1.0.2.jar</cp>
+    <cp>qr-attendance-1.0.3.jar</cp>
     <cp>lib\*</cp>
   </classPath>
   <jre>

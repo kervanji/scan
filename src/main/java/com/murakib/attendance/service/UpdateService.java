@@ -10,14 +10,18 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.security.CodeSource;
 import java.security.MessageDigest;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.HexFormat;
 import java.util.Optional;
 import java.util.concurrent.Executors;
@@ -26,6 +30,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 public class UpdateService {
 
@@ -119,19 +126,22 @@ public class UpdateService {
             throw new IllegalStateException("رابط التحميل غير موجود في ملف التحديث");
         }
 
-        Optional<Path> appJar = locateAppJar();
-        if (appJar.isEmpty()) {
-            throw new IllegalStateException("وضع التطوير: التحديث التلقائي يعمل فقط مع ملف JAR المُثبّت");
+        Optional<Path> appDir = locateAppDirectory();
+        if (appDir.isEmpty()) {
+            throw new IllegalStateException("تعذّر تحديد مجلد التطبيق");
         }
 
+        String downloadUrl = manifest.getDownloadUrl();
+        boolean isZip = downloadUrl.toLowerCase().contains(".zip");
         Path updatesDir = AppPaths.updatesRoot();
         Files.createDirectories(updatesDir);
-        Path downloadPath = updatesDir.resolve("qr-attendance-" + manifest.getVersion() + ".jar");
+        String extension = isZip ? ".zip" : ".jar";
+        Path downloadPath = updatesDir.resolve("qr-attendance-" + manifest.getVersion() + extension);
 
         if (progress != null) {
             progress.accept("جاري التحميل...");
         }
-        downloadFile(manifest.getDownloadUrl(), downloadPath);
+        downloadFile(downloadUrl, downloadPath);
 
         if (manifest.getSha256() != null && !manifest.getSha256().isBlank()) {
             if (progress != null) {
@@ -144,14 +154,30 @@ public class UpdateService {
             }
         }
 
-        Path backupDir = AppPaths.backupsRoot().resolve("before-update-" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")));
+        Path backupDir = AppPaths.backupsRoot().resolve(
+                "before-update-" + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")));
         Files.createDirectories(backupDir);
-        Files.copy(appJar.get(), backupDir.resolve(appJar.get().getFileName()), StandardCopyOption.REPLACE_EXISTING);
+        backupAppFiles(appDir.get(), backupDir);
 
         if (progress != null) {
             progress.accept("جاري التطبيق وإعادة التشغيل...");
         }
-        scheduleRestart(downloadPath, appJar.get());
+
+        if (isZip) {
+            Path extractDir = updatesDir.resolve("extracted-" + manifest.getVersion());
+            deleteDirectory(extractDir);
+            Files.createDirectories(extractDir);
+            unzip(downloadPath, extractDir);
+            Path sourceDir = findReleaseRoot(extractDir);
+            scheduleDirectoryUpdate(sourceDir, appDir.get());
+        } else {
+            Optional<Path> appJar = locateAppJar();
+            if (appJar.isEmpty()) {
+                throw new IllegalStateException("تعذّر العثور على ملف JAR في مجلد التطبيق");
+            }
+            scheduleJarUpdate(downloadPath, appJar.get(), appDir.get());
+        }
+
         return "سيتم إعادة تشغيل التطبيق لتطبيق التحديث " + manifest.getVersion();
     }
 
@@ -322,12 +348,16 @@ public class UpdateService {
     }
 
     private void downloadFile(String url, Path target) throws Exception {
-        HttpRequest request = HttpRequest.newBuilder()
+        String token = settings.getOrDefault(SettingsRepository.UPDATE_GITHUB_TOKEN, "").trim();
+        HttpRequest.Builder builder = HttpRequest.newBuilder()
                 .uri(URI.create(url))
+                .header("User-Agent", AppVersion.appName())
                 .timeout(Duration.ofMinutes(10))
-                .GET()
-                .build();
-        HttpResponse<InputStream> response = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
+                .GET();
+        if (!token.isBlank() && isGitHubUrl(url)) {
+            builder.header("Authorization", "Bearer " + token);
+        }
+        HttpResponse<InputStream> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofInputStream());
         if (response.statusCode() != 200) {
             throw new IllegalStateException("فشل التحميل: HTTP " + response.statusCode());
         }
@@ -348,6 +378,23 @@ public class UpdateService {
         return HexFormat.of().formatHex(digest.digest());
     }
 
+    public Optional<Path> locateAppDirectory() {
+        try {
+            CodeSource source = UpdateService.class.getProtectionDomain().getCodeSource();
+            if (source != null && source.getLocation() != null) {
+                Path path = Path.of(source.getLocation().toURI());
+                if (Files.isRegularFile(path)) {
+                    return Optional.of(path.toAbsolutePath().getParent());
+                }
+                if (Files.isDirectory(path)) {
+                    return Optional.of(path.toAbsolutePath());
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return Optional.empty();
+    }
+
     public Optional<Path> locateAppJar() {
         try {
             CodeSource source = UpdateService.class.getProtectionDomain().getCodeSource();
@@ -359,31 +406,179 @@ public class UpdateService {
             }
         } catch (Exception ignored) {
         }
-        return Optional.empty();
+        return locateAppDirectory().flatMap(this::findAppJarInDirectory);
     }
 
-    private void scheduleRestart(Path newJar, Path currentJar) throws Exception {
+    public Optional<Path> locateAppExe() {
+        return locateAppDirectory()
+                .map(dir -> dir.resolve("Murakib Attendance.exe"))
+                .filter(Files::exists);
+    }
+
+    private Optional<Path> findAppJarInDirectory(Path directory) {
+        try (Stream<Path> files = Files.list(directory)) {
+            return files
+                    .filter(Files::isRegularFile)
+                    .filter(path -> path.getFileName().toString().startsWith("qr-attendance-"))
+                    .filter(path -> path.getFileName().toString().endsWith(".jar"))
+                    .findFirst();
+        } catch (Exception ignored) {
+            return Optional.empty();
+        }
+    }
+
+    private void backupAppFiles(Path appDir, Path backupDir) throws Exception {
+        try (Stream<Path> files = Files.list(appDir)) {
+            for (Path file : files.toList()) {
+                String name = file.getFileName().toString();
+                if (Files.isRegularFile(file) && (name.endsWith(".jar") || name.endsWith(".exe") || name.endsWith(".bat"))) {
+                    Files.copy(file, backupDir.resolve(name), StandardCopyOption.REPLACE_EXISTING);
+                }
+            }
+        }
+        Path libDir = appDir.resolve("lib");
+        if (Files.isDirectory(libDir)) {
+            copyDirectory(libDir, backupDir.resolve("lib"));
+        }
+    }
+
+    private Path findReleaseRoot(Path extractDir) throws Exception {
+        try (Stream<Path> entries = Files.list(extractDir)) {
+            Optional<Path> nested = entries
+                    .filter(Files::isDirectory)
+                    .filter(path -> findAppJarInDirectory(path).isPresent())
+                    .findFirst();
+            if (nested.isPresent()) {
+                return nested.get();
+            }
+        }
+        if (findAppJarInDirectory(extractDir).isPresent()) {
+            return extractDir;
+        }
+        throw new IllegalStateException("ملف التحديث لا يحتوي على ملفات التطبيق المتوقعة");
+    }
+
+    private void unzip(Path zipFile, Path targetDir) throws Exception {
+        try (ZipInputStream zis = new ZipInputStream(Files.newInputStream(zipFile))) {
+            ZipEntry entry;
+            while ((entry = zis.getNextEntry()) != null) {
+                Path outPath = targetDir.resolve(entry.getName()).normalize();
+                if (!outPath.startsWith(targetDir)) {
+                    throw new IllegalStateException("مسار غير آمن داخل ملف التحديث");
+                }
+                if (entry.isDirectory()) {
+                    Files.createDirectories(outPath);
+                } else {
+                    Files.createDirectories(outPath.getParent());
+                    Files.copy(zis, outPath, StandardCopyOption.REPLACE_EXISTING);
+                }
+                zis.closeEntry();
+            }
+        }
+    }
+
+    private void copyDirectory(Path source, Path target) throws Exception {
+        Files.walkFileTree(source, new SimpleFileVisitor<>() {
+            @Override
+            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws java.io.IOException {
+                Files.createDirectories(target.resolve(source.relativize(dir)));
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws java.io.IOException {
+                Files.copy(file, target.resolve(source.relativize(file)), StandardCopyOption.REPLACE_EXISTING);
+                return FileVisitResult.CONTINUE;
+            }
+        });
+    }
+
+    private void deleteDirectory(Path directory) throws Exception {
+        if (!Files.exists(directory)) {
+            return;
+        }
+        try (Stream<Path> walk = Files.walk(directory)) {
+            walk.sorted(Comparator.reverseOrder()).forEach(path -> {
+                try {
+                    Files.deleteIfExists(path);
+                } catch (Exception ignored) {
+                }
+            });
+        }
+    }
+
+    private void scheduleDirectoryUpdate(Path sourceDir, Path appDir) throws Exception {
         Path updatesDir = AppPaths.updatesRoot();
         Files.createDirectories(updatesDir);
-        String javaBin = Path.of(System.getProperty("java.home"), "bin",
-                isWindows() ? "javaw.exe" : "java").toString();
 
         if (isWindows()) {
             Path script = updatesDir.resolve("apply-update.bat");
             String content = """
                     @echo off
-                    timeout /t 2 /nobreak > nul
-                    copy /Y "%s" "%s"
-                    start "" "%s" -jar "%s"
+                    timeout /t 3 /nobreak > nul
+                    xcopy /E /Y /I "%s\\*" "%s\\"
+                    if exist "%s\\Murakib Attendance.exe" (
+                      start "" "%s\\Murakib Attendance.exe"
+                    ) else (
+                      for %%f in ("%s\\qr-attendance-*.jar") do start "" javaw --module-path "%s\\lib" --add-modules javafx.controls,javafx.fxml,javafx.swing -cp "%%f;%s\\lib\\*" com.murakib.attendance.Main
+                    )
                     del "%%~f0"
-                    """.formatted(newJar, currentJar, javaBin, currentJar);
+                    """.formatted(sourceDir, appDir, appDir, appDir, appDir, appDir, appDir);
             Files.writeString(script, content);
             new ProcessBuilder("cmd", "/c", script.toString()).start();
         } else {
             Path script = updatesDir.resolve("apply-update.sh");
             String content = """
                     #!/bin/bash
-                    sleep 2
+                    sleep 3
+                    cp -R "%s"/. "%s"/
+                    if [ -f "%s/Murakib Attendance.exe" ]; then
+                      open "%s/Murakib Attendance.exe" || true
+                    elif ls "%s"/qr-attendance-*.jar 1> /dev/null 2>&1; then
+                      java -jar "$(ls "%s"/qr-attendance-*.jar | head -n 1)" &
+                    fi
+                    rm -f "$0"
+                    """.formatted(sourceDir, appDir, appDir, appDir, appDir, appDir);
+            Files.writeString(script, content);
+            script.toFile().setExecutable(true);
+            new ProcessBuilder("/bin/bash", script.toString()).start();
+        }
+    }
+
+    private void scheduleJarUpdate(Path newJar, Path currentJar, Path appDir) throws Exception {
+        Path updatesDir = AppPaths.updatesRoot();
+        Files.createDirectories(updatesDir);
+        String javaBin = Path.of(System.getProperty("java.home"), "bin",
+                isWindows() ? "javaw.exe" : "java").toString();
+        Optional<Path> appExe = locateAppExe();
+
+        if (isWindows()) {
+            Path script = updatesDir.resolve("apply-update.bat");
+            String content;
+            if (appExe.isPresent()) {
+                content = """
+                        @echo off
+                        timeout /t 3 /nobreak > nul
+                        copy /Y "%s" "%s"
+                        start "" "%s"
+                        del "%%~f0"
+                        """.formatted(newJar, currentJar, appExe.get());
+            } else {
+                content = """
+                        @echo off
+                        timeout /t 3 /nobreak > nul
+                        copy /Y "%s" "%s"
+                        start "" "%s" -jar "%s"
+                        del "%%~f0"
+                        """.formatted(newJar, currentJar, javaBin, currentJar);
+            }
+            Files.writeString(script, content);
+            new ProcessBuilder("cmd", "/c", script.toString()).start();
+        } else {
+            Path script = updatesDir.resolve("apply-update.sh");
+            String content = """
+                    #!/bin/bash
+                    sleep 3
                     cp -f "%s" "%s"
                     "%s" -jar "%s" &
                     rm -f "$0"
