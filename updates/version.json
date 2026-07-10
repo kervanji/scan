@@ -1,7 +1,7 @@
 {
   "version": "1.0.1",
   "downloadUrl": "https://github.com/kervanji/scan/releases/download/v1.0.1/qr-attendance-1.0.1-win.zip",
-  "sha256": "ba08ed2773df0d5febfb7ba237842e3a433b37480af27847ab254c9528533f05",
+  "sha256": "7d4fbb1c2d9fd13d5a3164998aac237de9b94b0b31db0e8b7f6ed1b69296f4ba",
   "releaseNotes": "نسخة Windows مع Murakib Attendance.exe — تشغيل مباشر بدون تثبيت Java",
   "mandatory": false,
   "minVersion": "1.0.0"

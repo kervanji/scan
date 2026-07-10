@@ -316,7 +316,8 @@ public class AdminPanelView {
         Label hint = new Label("""
                 الطريقة 1: ارفع updates/version.json إلى GitHub وضع الرابط raw هنا.
                 الطريقة 2: اكتب USER/REPO لاستخدام GitHub Releases تلقائيًا.
-                عند كل إصدار جديد: npm mvn package ثم ارفع JAR إلى Release وحدّث version.json.""");
+                ⚠️ المستودع الخاص (private) يتطلب GitHub Token — بدونه يظهر HTTP 404.
+                للتوزيع للعملاء: اجعل المستودع public أو أضف Token هنا.""");
         hint.setWrapText(true);
         hint.setStyle("-fx-text-fill: #64748b;");
 

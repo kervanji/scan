@@ -165,21 +165,63 @@ public class UpdateService {
             return fetchFromGitHubReleases(url.substring("github:".length()).trim());
         }
 
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .header("Accept", "application/json")
+        String token = settings.getOrDefault(SettingsRepository.UPDATE_GITHUB_TOKEN, "").trim();
+        HttpRequest.Builder builder = HttpRequest.newBuilder()
+                .header("User-Agent", AppVersion.appName())
                 .timeout(Duration.ofSeconds(30))
-                .GET()
-                .build();
-        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+                .GET();
+
+        Optional<String> contentsApiUrl = toGitHubContentsApiUrl(url);
+        if (contentsApiUrl.isPresent() && !token.isBlank()) {
+            builder.uri(URI.create(contentsApiUrl.get()));
+            builder.header("Accept", "application/vnd.github.raw+json");
+            builder.header("Authorization", "Bearer " + token);
+        } else {
+            builder.uri(URI.create(url));
+            builder.header("Accept", "application/json");
+            if (!token.isBlank() && isGitHubUrl(url)) {
+                builder.header("Authorization", "Bearer " + token);
+            }
+        }
+
+        HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() == 404 && isGitHubRawUrl(url)) {
+            String repo = settings.getOrDefault(SettingsRepository.UPDATE_GITHUB_REPO, "").trim();
+            if (!repo.isBlank()) {
+                return fetchFromGitHubReleases(repo.replaceFirst("^github:", ""));
+            }
+            throw new IllegalStateException(
+                    "HTTP 404 — المستودع خاص. أضف GitHub Token من لوحة الإدارة → التحديثات");
+        }
         if (response.statusCode() != 200) {
             throw new IllegalStateException("HTTP " + response.statusCode());
         }
         return parseManifest(response.body());
     }
 
+    private static boolean isGitHubUrl(String url) {
+        return url.contains("github.com") || url.contains("githubusercontent.com");
+    }
+
+    private static boolean isGitHubRawUrl(String url) {
+        return url.contains("raw.githubusercontent.com");
+    }
+
+    private static Optional<String> toGitHubContentsApiUrl(String url) {
+        Pattern p = Pattern.compile(
+                "https?://raw\\.githubusercontent\\.com/([^/]+)/([^/]+)/[^/]+/(.+)");
+        Matcher m = p.matcher(url.trim());
+        if (!m.matches()) {
+            return Optional.empty();
+        }
+        String owner = m.group(1);
+        String repo = m.group(2);
+        String path = m.group(3);
+        return Optional.of("https://api.github.com/repos/" + owner + "/" + repo + "/contents/" + path);
+    }
+
     private UpdateManifest fetchFromGitHubReleases(String repo) throws Exception {
-        String token = settings.getOrDefault(SettingsRepository.UPDATE_GITHUB_TOKEN, "");
+        String token = settings.getOrDefault(SettingsRepository.UPDATE_GITHUB_TOKEN, "").trim();
         HttpRequest.Builder builder = HttpRequest.newBuilder()
                 .uri(URI.create("https://api.github.com/repos/" + repo + "/releases/latest"))
                 .header("Accept", "application/vnd.github+json")
@@ -190,6 +232,10 @@ public class UpdateService {
             builder.header("Authorization", "Bearer " + token);
         }
         HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() == 404) {
+            throw new IllegalStateException(
+                    "GitHub API: HTTP 404 — المستودع خاص أو لا يوجد Release. أضف GitHub Token");
+        }
         if (response.statusCode() != 200) {
             throw new IllegalStateException("GitHub API: HTTP " + response.statusCode());
         }
