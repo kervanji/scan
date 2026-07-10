@@ -28,6 +28,8 @@ jobs:
 
       - name: Build Windows release
         shell: bash
+        env:
+          RUNNER_OS: Windows
         run: |
           chmod +x scripts/build-release.sh
           PLATFORM=win ./scripts/build-release.sh "${{ steps.version.outputs.VERSION }}"

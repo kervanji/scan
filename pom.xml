@@ -17,6 +17,10 @@
         <maven.compiler.target>17</maven.compiler.target>
         <javafx.version>21.0.2</javafx.version>
         <javafx.platform>win</javafx.platform>
+        <native.platform>windows-x86_64</native.platform>
+        <opencv.version>4.9.0-1.5.10</opencv.version>
+        <openblas.version>0.3.26-1.5.10</openblas.version>
+        <javacpp.version>1.5.10</javacpp.version>
         <main.class>com.murakib.attendance.Main</main.class>
         <update.manifest.url>https://raw.githubusercontent.com/kervanji/scan/main/updates/version.json</update.manifest.url>
         <update.github.repo>kervanji/scan</update.github.repo>
@@ -57,11 +61,70 @@
             <groupId>org.bytedeco</groupId>
             <artifactId>javacv</artifactId>
             <version>1.5.10</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>ffmpeg</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>flycapture</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>libdc1394</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>libfreenect</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>libfreenect2</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>librealsense</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>librealsense2</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>videoinput</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>artoolkitplus</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>leptonica</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.bytedeco</groupId>
+                    <artifactId>tesseract</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>org.bytedeco</groupId>
-            <artifactId>opencv-platform</artifactId>
-            <version>4.9.0-1.5.10</version>
+            <artifactId>opencv</artifactId>
+            <version>${opencv.version}</version>
+            <classifier>${native.platform}</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>openblas</artifactId>
+            <version>${openblas.version}</version>
+            <classifier>${native.platform}</classifier>
+        </dependency>
+        <dependency>
+            <groupId>org.bytedeco</groupId>
+            <artifactId>javacpp</artifactId>
+            <version>${javacpp.version}</version>
+            <classifier>${native.platform}</classifier>
         </dependency>
         <dependency>
             <groupId>org.apache.poi</groupId>
@@ -71,6 +134,45 @@
     </dependencies>
 
     <profiles>
+        <profile>
+            <id>native-mac-aarch64</id>
+            <activation>
+                <os>
+                    <family>mac</family>
+                    <arch>aarch64</arch>
+                </os>
+            </activation>
+            <properties>
+                <javafx.platform>mac-aarch64</javafx.platform>
+                <native.platform>macosx-arm64</native.platform>
+            </properties>
+        </profile>
+        <profile>
+            <id>native-mac-x86_64</id>
+            <activation>
+                <os>
+                    <family>mac</family>
+                    <arch>x86_64</arch>
+                </os>
+            </activation>
+            <properties>
+                <javafx.platform>mac</javafx.platform>
+                <native.platform>macosx-x86_64</native.platform>
+            </properties>
+        </profile>
+        <profile>
+            <id>native-linux</id>
+            <activation>
+                <os>
+                    <family>unix</family>
+                    <name>Linux</name>
+                </os>
+            </activation>
+            <properties>
+                <javafx.platform>linux</javafx.platform>
+                <native.platform>linux-x86_64</native.platform>
+            </properties>
+        </profile>
         <profile>
             <id>release</id>
             <dependencies>

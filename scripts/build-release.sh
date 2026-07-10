@@ -8,10 +8,22 @@ VERSION="${1:-$(mvn -q help:evaluate -Dexpression=project.version -DforceStdout)
 PLATFORM="${PLATFORM:-win}"
 OUT_DIR="$ROOT/release-output/qr-attendance-${VERSION}-${PLATFORM}"
 
-echo "==> Building v${VERSION} for platform: ${PLATFORM}"
+case "$PLATFORM" in
+  win) NATIVE_PLATFORM="windows-x86_64" ;;
+  mac-aarch64) NATIVE_PLATFORM="macosx-arm64" ;;
+  mac|mac-x86_64) NATIVE_PLATFORM="macosx-x86_64" ;;
+  linux) NATIVE_PLATFORM="linux-x86_64" ;;
+  *)
+    echo "Unknown PLATFORM: $PLATFORM" >&2
+    exit 1
+    ;;
+esac
+
+echo "==> Building v${VERSION} for platform: ${PLATFORM} (native: ${NATIVE_PLATFORM})"
 
 mvn -B clean package -Prelease -DskipTests \
   -Djavafx.platform="${PLATFORM}" \
+  -Dnative.platform="${NATIVE_PLATFORM}" \
   -Dupdate.manifest.url="https://raw.githubusercontent.com/kervanji/scan/main/updates/version.json" \
   -Dupdate.github.repo="kervanji/scan"
 
@@ -32,11 +44,37 @@ cp release-templates/README-RELEASE.txt "$OUT_DIR/README.txt"
 
 ZIP="$ROOT/release-output/qr-attendance-${VERSION}-${PLATFORM}.zip"
 rm -f "$ZIP"
-(cd "$ROOT/release-output" && zip -r "$(basename "$ZIP")" "$(basename "$OUT_DIR")")
+
+create_zip() {
+  local folder="$1"
+  local archive="$2"
+  if command -v zip >/dev/null 2>&1; then
+    (cd "$(dirname "$folder")" && zip -r "$(basename "$archive")" "$(basename "$folder")")
+  elif [[ "${RUNNER_OS:-}" == "Windows" ]] || [[ "$(uname -s 2>/dev/null)" == MINGW* ]]; then
+    powershell.exe -NoProfile -Command \
+      "Compress-Archive -Path '$(cygpath -w "$folder")' -DestinationPath '$(cygpath -w "$archive")' -Force"
+  else
+    echo "zip not found and no Windows fallback available" >&2
+    exit 1
+  fi
+}
+
+hash_file() {
+  local file="$1"
+  if command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$file" | awk '{print $1}'
+  elif command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$file" | awk '{print $1}'
+  else
+    powershell.exe -NoProfile -Command "(Get-FileHash -Algorithm SHA256 '$(cygpath -w "$file")').Hash.ToLower()"
+  fi
+}
+
+create_zip "$OUT_DIR" "$ZIP"
 
 JAR="$OUT_DIR/qr-attendance-${VERSION}.jar"
-SHA256="$(shasum -a 256 "$JAR" | awk '{print $1}')"
-ZIP_SHA256="$(shasum -a 256 "$ZIP" | awk '{print $1}')"
+SHA256="$(hash_file "$JAR")"
+ZIP_SHA256="$(hash_file "$ZIP")"
 
 mkdir -p updates
 cat > "updates/version-${PLATFORM}.json" <<EOF
