@@ -35,6 +35,11 @@ cp -R target/lib/. "$OUT_DIR/lib/"
 
 if [[ "$PLATFORM" == "win" ]]; then
   cp release-templates/start-windows.bat "$OUT_DIR/Start Attendance.bat"
+  if [[ -f "target/Murakib Attendance.exe" ]]; then
+    cp "target/Murakib Attendance.exe" "$OUT_DIR/"
+  else
+    echo "WARNING: target/Murakib Attendance.exe not found — run mvn package -Prelease first" >&2
+  fi
 else
   cp release-templates/start-mac.sh "$OUT_DIR/start.sh"
   chmod +x "$OUT_DIR/start.sh"

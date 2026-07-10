@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch4jConfig>
+  <dontWrapJar>false</dontWrapJar>
+  <headerType>gui</headerType>
+  <jar>target\qr-attendance-1.0.1.jar</jar>
+  <outfile>target\Murakib Attendance.exe</outfile>
+  <errTitle>Murakib Attendance</errTitle>
+  <cmdLine></cmdLine>
+  <chdir>.</chdir>
+  <priority>normal</priority>
+  <downloadUrl>https://adoptium.net</downloadUrl>
+  <supportUrl></supportUrl>
+  <stayAlive>false</stayAlive>
+  <restartOnCrash>false</restartOnCrash>
+  <manifest></manifest>
+  <classPath>
+    <mainClass>com.murakib.attendance.Main</mainClass>
+    <cp>qr-attendance-1.0.1.jar</cp>
+    <cp>lib\*</cp>
+  </classPath>
+  <jre>
+    <requiresJdk>false</requiresJdk>
+    <requires64Bit>true</requires64Bit>
+    <minVersion>17</minVersion>
+    <maxVersion></maxVersion>
+    <opt>--module-path lib</opt>
+    <opt>--add-modules=javafx.controls,javafx.fxml,javafx.swing</opt>
+  </jre>
+</launch4jConfig>

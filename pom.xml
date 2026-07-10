@@ -6,7 +6,7 @@
 
     <groupId>com.murakib</groupId>
     <artifactId>qr-attendance</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <packaging>jar</packaging>
     <name>Murakib Attendance</name>
     <description>نظام حضور وانصراف الموظفين عبر QR Code</description>
@@ -262,6 +262,39 @@
                             </execution>
                         </executions>
                     </plugin>
+                    <plugin>
+                        <groupId>com.akathist.maven.plugins.launch4j</groupId>
+                        <artifactId>launch4j-maven-plugin</artifactId>
+                        <version>2.5.3</version>
+                        <executions>
+                            <execution>
+                                <id>launch4j</id>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>launch4j</goal>
+                                </goals>
+                                <configuration>
+                                    <headerType>gui</headerType>
+                                    <outfile>${project.build.directory}/Murakib Attendance.exe</outfile>
+                                    <jar>${project.build.directory}/${project.build.finalName}.jar</jar>
+                                    <dontWrapJar>false</dontWrapJar>
+                                    <chdir>.</chdir>
+                                    <classPath>
+                                        <mainClass>${main.class}</mainClass>
+                                        <addDependencies>false</addDependencies>
+                                        <preCp>lib\*</preCp>
+                                    </classPath>
+                                    <jre>
+                                        <minVersion>17</minVersion>
+                                        <opts>
+                                            <opt>--module-path lib</opt>
+                                            <opt>--add-modules=javafx.controls,javafx.fxml,javafx.swing</opt>
+                                        </opts>
+                                    </jre>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
                 </plugins>
             </build>
         </profile>
@@ -300,6 +333,7 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>${main.class}</mainClass>

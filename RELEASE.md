@@ -70,10 +70,12 @@ release-output/qr-attendance-1.0.0-win.zip
 
 ## للعميل (Windows)
 
-1. حمّل `qr-attendance-1.0.0-win.zip`
+**رابط التحميل:** https://github.com/kervanji/scan/releases/latest
+
+1. حمّل `qr-attendance-1.0.0-win.zip` (أو أحدث نسخة)
 2. فك الضغط
-3. ثبّت Java 17 من https://adoptium.net
-4. شغّل **Start Attendance.bat**
+3. شغّل **Murakib Attendance.exe** (الطريقة الأسهل)
+4. أو شغّل **Start Attendance.bat** (يتطلب Java 17 من https://adoptium.net)
 
 ---
 

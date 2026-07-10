@@ -69,6 +69,18 @@ java -jar target/qr-attendance-1.0.0.jar
 | سجل التدقيق | ✅ |
 | الوضع التلقائي + Kiosk | ✅ |
 
+## تحميل النسخة الجاهزة (للعملاء)
+
+حمّل أحدث إصدار من GitHub:
+
+**https://github.com/kervanji/scan/releases/latest**
+
+1. حمّل `qr-attendance-*-win.zip`
+2. فك الضغط
+3. شغّل `Murakib Attendance.exe`
+
+راجع **[Howitworkexe.md](Howitworkexe.md)** لتفاصيل التوزيع والنشر.
+
 ## إنشاء Installer لـ Windows
 
 ```bash
