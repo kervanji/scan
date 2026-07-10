@@ -94,6 +94,15 @@ public final class DatabaseManager {
                     sort_order INTEGER NOT NULL DEFAULT 0
                 )
                 """);
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS employee_work_shifts (
+                    employee_id INTEGER NOT NULL,
+                    shift_id INTEGER NOT NULL,
+                    PRIMARY KEY (employee_id, shift_id),
+                    FOREIGN KEY (employee_id) REFERENCES employees(id) ON DELETE CASCADE,
+                    FOREIGN KEY (shift_id) REFERENCES work_shifts(id) ON DELETE CASCADE
+                )
+                """);
         }
     }
 

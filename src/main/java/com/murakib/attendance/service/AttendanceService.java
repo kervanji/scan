@@ -19,6 +19,8 @@ import java.util.Optional;
 
 public class AttendanceService {
 
+    public static final String COVER_NOTE_PREFIX = "تغطية شفت: ";
+
     public record ScanResult(
             boolean success,
             String message,
@@ -39,6 +41,7 @@ public class AttendanceService {
     private final SettingsRepository settingsRepository;
     private final PhotoService photoService;
     private final TelegramService telegramService;
+    private final ShiftScheduleService shiftScheduleService;
 
     private final Map<String, LocalDateTime> lastScanByToken = new HashMap<>();
     private EventType manualMode = EventType.CHECK_IN;
@@ -49,13 +52,15 @@ public class AttendanceService {
             AttendanceRepository attendanceRepository,
             SettingsRepository settingsRepository,
             PhotoService photoService,
-            TelegramService telegramService
+            TelegramService telegramService,
+            ShiftScheduleService shiftScheduleService
     ) {
         this.employeeRepository = employeeRepository;
         this.attendanceRepository = attendanceRepository;
         this.settingsRepository = settingsRepository;
         this.photoService = photoService;
         this.telegramService = telegramService;
+        this.shiftScheduleService = shiftScheduleService;
     }
 
     public void reloadSettings() throws Exception {
@@ -127,6 +132,9 @@ public class AttendanceService {
         event.setEmployeeName(employee.getFullName());
         event.setEmployeeCode(employee.getEmployeeCode());
         event.setDepartment(employee.getDepartment());
+        if (eventType == EventType.CHECK_IN) {
+            markCoverShift(event, employee);
+        }
 
         attendanceRepository.insert(event);
         lastScanByToken.put(qrToken, now);
@@ -140,6 +148,18 @@ public class AttendanceService {
 
         String message = buildSuccessMessage(employee, eventType, now, workDuration);
         return new ScanResult(true, message, event, employee, eventType, workDuration);
+    }
+
+    private void markCoverShift(AttendanceEvent event, Employee employee) throws Exception {
+        ShiftScheduleService.ShiftEvaluation ownShift = shiftScheduleService
+                .evaluateCheckIn(employee.getId(), event.getEventTime());
+        if (ownShift.shift() != null) return;
+
+        ShiftScheduleService.ShiftEvaluation coveringShift = shiftScheduleService
+                .evaluateCheckIn(event.getEventTime());
+        if (coveringShift.shift() != null) {
+            event.setNotes(COVER_NOTE_PREFIX + coveringShift.shift().getName());
+        }
     }
 
     private EventType resolveEventType(Employee employee, LocalDate date) throws Exception {

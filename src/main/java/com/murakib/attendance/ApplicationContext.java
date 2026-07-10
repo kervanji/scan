@@ -51,11 +51,12 @@ public class ApplicationContext {
         photoService = new PhotoService();
         qrService = new QrService();
         cameraService = new CameraService();
-        telegramService = new TelegramService(settingsRepository, attendanceRepository);
+        shiftScheduleService = new ShiftScheduleService(workShiftRepository, employeeRepository);
+        telegramService = new TelegramService(settingsRepository, attendanceRepository, shiftScheduleService);
         attendanceService = new AttendanceService(
-                employeeRepository, attendanceRepository, settingsRepository, photoService, telegramService
+                employeeRepository, attendanceRepository, settingsRepository, photoService, telegramService,
+                shiftScheduleService
         );
-        shiftScheduleService = new ShiftScheduleService(workShiftRepository);
         attendanceService.reloadSettings();
         excelExportService = new ExcelExportService(attendanceRepository, employeeRepository, shiftScheduleService);
         backupService = new BackupService(settingsRepository);

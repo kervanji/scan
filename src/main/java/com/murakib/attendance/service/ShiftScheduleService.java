@@ -2,6 +2,7 @@ package com.murakib.attendance.service;
 
 import com.murakib.attendance.model.WorkShift;
 import com.murakib.attendance.repository.WorkShiftRepository;
+import com.murakib.attendance.repository.EmployeeRepository;
 
 import java.time.Duration;
 import java.time.LocalDate;
@@ -26,9 +27,21 @@ public class ShiftScheduleService {
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm");
 
     private final WorkShiftRepository shiftRepository;
+    private final EmployeeRepository employeeRepository;
 
-    public ShiftScheduleService(WorkShiftRepository shiftRepository) {
+    public ShiftScheduleService(WorkShiftRepository shiftRepository, EmployeeRepository employeeRepository) {
         this.shiftRepository = shiftRepository;
+        this.employeeRepository = employeeRepository;
+    }
+
+    public List<WorkShift> getShiftsForEmployee(long employeeId, LocalDate date) throws Exception {
+        var assigned = employeeRepository.findAssignedShiftIds(employeeId);
+        if (assigned.isEmpty()) return List.of();
+        return getShiftsForDate(date).stream().filter(s -> assigned.contains(s.getId())).toList();
+    }
+
+    public Optional<WorkShift> findMatchingShift(long employeeId, LocalDate date, LocalTime checkInTime) throws Exception {
+        return findMatchingShift(getShiftsForEmployee(employeeId, date), checkInTime);
     }
 
     public List<WorkShift> getShiftsForDate(LocalDate date) throws Exception {
@@ -36,7 +49,10 @@ public class ShiftScheduleService {
     }
 
     public Optional<WorkShift> findMatchingShift(LocalDate date, LocalTime checkInTime) throws Exception {
-        List<WorkShift> shifts = getShiftsForDate(date);
+        return findMatchingShift(getShiftsForDate(date), checkInTime);
+    }
+
+    private Optional<WorkShift> findMatchingShift(List<WorkShift> shifts, LocalTime checkInTime) {
         if (shifts.isEmpty()) {
             return Optional.empty();
         }
@@ -66,6 +82,15 @@ public class ShiftScheduleService {
 
     public ShiftEvaluation evaluateCheckIn(LocalDateTime checkIn) throws Exception {
         Optional<WorkShift> shiftOpt = findMatchingShift(checkIn.toLocalDate(), checkIn.toLocalTime());
+        return evaluate(checkIn, shiftOpt);
+    }
+
+    public ShiftEvaluation evaluateCheckIn(long employeeId, LocalDateTime checkIn) throws Exception {
+        Optional<WorkShift> shiftOpt = findMatchingShift(employeeId, checkIn.toLocalDate(), checkIn.toLocalTime());
+        return evaluate(checkIn, shiftOpt);
+    }
+
+    private ShiftEvaluation evaluate(LocalDateTime checkIn, Optional<WorkShift> shiftOpt) {
         if (shiftOpt.isEmpty()) {
             return new ShiftEvaluation(null, false, 0, "بدون شفت مطابق");
         }

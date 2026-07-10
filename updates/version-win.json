@@ -1,8 +1,8 @@
 {
-  "version": "1.0.0",
-  "downloadUrl": "https://github.com/kervanji/scan/releases/download/v1.0.0/qr-attendance-1.0.0-win.zip",
-  "sha256": "9ab7593eb69ca3c157549b78cab8503bb5725b2ff99744acb72c934c44d12d6d",
-  "releaseNotes": "Release v1.0.0 (win)",
+  "version": "1.0.4",
+  "downloadUrl": "https://github.com/kervanji/scan/releases/download/v1.0.4/qr-attendance-1.0.4-win.zip",
+  "sha256": "cfc9d8c425c4b58d9260086fff3a0e9575f94e4b756938709c8bf016ff342225",
+  "releaseNotes": "تخصيص شفتات وأيام العمل للموظفين، إشعارات التأخير والتغطية في Telegram.",
   "mandatory": false,
   "minVersion": "1.0.0"
 }

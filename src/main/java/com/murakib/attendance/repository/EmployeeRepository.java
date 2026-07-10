@@ -13,6 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.Set;
+import java.util.HashSet;
 
 public class EmployeeRepository {
 
@@ -137,6 +139,40 @@ public class EmployeeRepository {
             }
         }
         return 0;
+    }
+
+    public Set<Long> findAssignedShiftIds(long employeeId) throws Exception {
+        Set<Long> ids = new HashSet<>();
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(
+                     "SELECT shift_id FROM employee_work_shifts WHERE employee_id = ?")) {
+            ps.setLong(1, employeeId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) ids.add(rs.getLong(1));
+            }
+        }
+        return ids;
+    }
+
+    public void replaceAssignedShifts(long employeeId, Set<Long> shiftIds) throws Exception {
+        try (Connection conn = db.getConnection()) {
+            conn.setAutoCommit(false);
+            try (PreparedStatement delete = conn.prepareStatement(
+                    "DELETE FROM employee_work_shifts WHERE employee_id = ?")) {
+                delete.setLong(1, employeeId);
+                delete.executeUpdate();
+            }
+            try (PreparedStatement insert = conn.prepareStatement(
+                    "INSERT INTO employee_work_shifts (employee_id, shift_id) VALUES (?, ?)")) {
+                for (Long shiftId : shiftIds) {
+                    insert.setLong(1, employeeId);
+                    insert.setLong(2, shiftId);
+                    insert.addBatch();
+                }
+                insert.executeBatch();
+            }
+            conn.commit();
+        }
     }
 
     private Employee mapRow(ResultSet rs) throws Exception {

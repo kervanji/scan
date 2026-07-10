@@ -24,6 +24,7 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.PasswordField;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.Tab;
 import javafx.scene.control.TabPane;
 import javafx.scene.control.TableColumn;
@@ -53,6 +54,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
 
 public class AdminPanelView {
 
@@ -681,6 +684,26 @@ public class AdminPanelView {
         CheckBox active = new CheckBox("مفعّل");
         active.setSelected(existing == null || existing.isActive());
 
+        VBox shiftsBox = new VBox(5);
+        List<CheckBox> shiftChecks = new ArrayList<>();
+        try {
+            Set<Long> assigned = existing == null ? Set.of()
+                    : context.employees().findAssignedShiftIds(existing.getId());
+            for (WorkShift shift : context.workShifts().findAll()) {
+                CheckBox check = new CheckBox(ShiftScheduleService.formatShiftSummary(shift));
+                check.setUserData(shift.getId());
+                check.setSelected(assigned.contains(shift.getId()));
+                shiftChecks.add(check);
+                shiftsBox.getChildren().add(check);
+            }
+        } catch (Exception ex) {
+            showError("خطأ", ex.getMessage());
+            return;
+        }
+        ScrollPane shiftsPane = new ScrollPane(shiftsBox);
+        shiftsPane.setFitToWidth(true);
+        shiftsPane.setPrefViewportHeight(130);
+
         GridPane grid = new GridPane();
         grid.setHgap(10);
         grid.setVgap(10);
@@ -689,7 +712,8 @@ public class AdminPanelView {
         grid.add(new Label("الاسم الكامل:"), 0, 1); grid.add(name, 1, 1);
         grid.add(new Label("القسم:"), 0, 2); grid.add(dept, 1, 2);
         grid.add(new Label("المسمى:"), 0, 3); grid.add(job, 1, 3);
-        grid.add(active, 1, 4);
+        grid.add(new Label("الشفتات والأيام:"), 0, 4); grid.add(shiftsPane, 1, 4);
+        grid.add(active, 1, 5);
 
         Button save = new Button("حفظ");
         save.setOnAction(e -> {
@@ -711,6 +735,11 @@ public class AdminPanelView {
                     context.employees().update(emp);
                     context.auditLogs().log(adminUsername, "UPDATE", "employees", emp.getId(), null, emp.getFullName());
                 }
+                Set<Long> selectedShiftIds = new HashSet<>();
+                for (CheckBox check : shiftChecks) {
+                    if (check.isSelected()) selectedShiftIds.add((Long) check.getUserData());
+                }
+                context.employees().replaceAssignedShifts(emp.getId(), selectedShiftIds);
                 refreshEmployees();
                 dialog.close();
             } catch (Exception ex) {
@@ -722,7 +751,7 @@ public class AdminPanelView {
         root.setNodeOrientation(NodeOrientation.RIGHT_TO_LEFT);
         root.setAlignment(Pos.CENTER);
         root.setPadding(new Insets(16));
-        dialog.setScene(new Scene(root, 400, 300));
+        dialog.setScene(new Scene(root, 620, 500));
         dialog.showAndWait();
     }
 
@@ -847,17 +876,15 @@ public class AdminPanelView {
 
             StringBuilder sb = new StringBuilder();
             if (shifts.isEmpty()) {
-                sb.append("لا توجد شفتات لهذا اليوم.\n\nالغائبون (بدون أي تسجيل):\n");
-                for (Employee e : active) {
-                    if (!checkInsByEmployee.containsKey(e.getId())) {
-                        sb.append("• ").append(e.getFullName()).append("\n");
-                    }
-                }
+                sb.append("لا توجد شفتات مجدولة لهذا اليوم.");
             } else {
                 for (WorkShift shift : shifts) {
                     sb.append("【").append(shift.getName()).append("】\n");
                     boolean any = false;
                     for (Employee e : active) {
+                        boolean assignedToday = context.shiftSchedule().getShiftsForEmployee(e.getId(), date)
+                                .stream().anyMatch(s -> s.getId() == shift.getId());
+                        if (!assignedToday) continue;
                         List<LocalDateTime> checkIns = checkInsByEmployee.getOrDefault(e.getId(), List.of());
                         if (!context.shiftSchedule().wasPresentInShift(date, shift, checkIns)) {
                             sb.append("• ").append(e.getFullName()).append("\n");
@@ -886,7 +913,7 @@ public class AdminPanelView {
                 if (e.getEventType() != EventType.CHECK_IN) {
                     continue;
                 }
-                ShiftScheduleService.ShiftEvaluation eval = schedule.evaluateCheckIn(e.getEventTime());
+                ShiftScheduleService.ShiftEvaluation eval = schedule.evaluateCheckIn(e.getEmployeeId(), e.getEventTime());
                 if (eval.late()) {
                     anyLate = true;
                     sb.append("• ").append(e.getEmployeeName())

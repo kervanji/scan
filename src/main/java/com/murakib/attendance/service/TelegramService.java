@@ -26,14 +26,17 @@ public class TelegramService {
 
     private final SettingsRepository settingsRepository;
     private final AttendanceRepository attendanceRepository;
+    private final ShiftScheduleService shiftScheduleService;
     private final HttpClient httpClient;
     private final ExecutorService sendExecutor;
     private final ScheduledExecutorService retryExecutor;
     private volatile boolean connected = false;
 
-    public TelegramService(SettingsRepository settingsRepository, AttendanceRepository attendanceRepository) {
+    public TelegramService(SettingsRepository settingsRepository, AttendanceRepository attendanceRepository,
+                           ShiftScheduleService shiftScheduleService) {
         this.settingsRepository = settingsRepository;
         this.attendanceRepository = attendanceRepository;
+        this.shiftScheduleService = shiftScheduleService;
         this.httpClient = HttpClient.newBuilder()
                 .connectTimeout(Duration.ofSeconds(10))
                 .build();
@@ -125,6 +128,9 @@ public class TelegramService {
         }
         sb.append("التاريخ: ").append(event.getEventTime().format(DATE_FMT)).append("\n");
         sb.append("الوقت: ").append(event.getEventTime().format(TIME_FMT)).append("\n");
+        if (event.getEventType() == EventType.CHECK_IN) {
+            appendShiftStatus(sb, employee, event);
+        }
         if (event.getDeviceName() != null) {
             sb.append("الجهاز: ").append(event.getDeviceName()).append("\n");
         }
@@ -132,6 +138,30 @@ public class TelegramService {
             sb.append("مدة العمل: ").append(AttendanceService.formatDuration(workDuration));
         }
         return sb.toString();
+    }
+
+    private void appendShiftStatus(StringBuilder sb, Employee employee, AttendanceEvent event) {
+        try {
+            boolean cover = event.getNotes() != null
+                    && event.getNotes().startsWith(AttendanceService.COVER_NOTE_PREFIX);
+            ShiftScheduleService.ShiftEvaluation evaluation = cover
+                    ? shiftScheduleService.evaluateCheckIn(event.getEventTime())
+                    : shiftScheduleService.evaluateCheckIn(employee.getId(), event.getEventTime());
+            if (evaluation.shift() == null) {
+                sb.append("حالة الدوام: بدون شفت مطابق\n");
+            } else if (evaluation.late()) {
+                sb.append("الشفت: ").append(evaluation.shift().getName()).append("\n");
+                if (cover) sb.append("نوع الدوام: تغطية 🔄\n");
+                sb.append("حالة الدوام: متأخر ⏰\n");
+                sb.append("مقدار التأخير: ").append(evaluation.lateMinutes()).append(" دقيقة\n");
+            } else {
+                sb.append("الشفت: ").append(evaluation.shift().getName()).append("\n");
+                if (cover) sb.append("نوع الدوام: تغطية 🔄\n");
+                sb.append("حالة الدوام: في الوقت ✅\n");
+            }
+        } catch (Exception ignored) {
+            sb.append("حالة الدوام: تعذر تحديدها\n");
+        }
     }
 
     private boolean sendMessage(String token, String chatId, String text) throws Exception {
@@ -191,6 +221,7 @@ public class TelegramService {
         try {
             for (AttendanceEvent event : attendanceRepository.findPendingTelegramEvents()) {
                 Employee employee = new Employee();
+                employee.setId(event.getEmployeeId());
                 employee.setFullName(event.getEmployeeName());
                 employee.setDepartment(event.getDepartment());
                 employee.setEmployeeCode(event.getEmployeeCode());
