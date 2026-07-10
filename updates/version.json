@@ -1,7 +1,7 @@
 {
   "version": "1.0.2",
   "downloadUrl": "https://github.com/kervanji/scan/releases/download/v1.0.2/qr-attendance-1.0.2-win.zip",
-  "sha256": "9ef5925a9020c5fdb1d2783574e9d92be0a34c3e5444749da9f4541eabfd65c1",
+  "sha256": "5a366602de387502daec9a8726138177cd5f83b12852c8960bfdf8a912963953",
   "releaseNotes": "إصلاح فحص التحديثات للمستودعات الخاصة + نسخة EXE",
   "mandatory": false,
   "minVersion": "1.0.0"
