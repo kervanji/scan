@@ -20,6 +20,7 @@ com\murakib\attendance\service\PhotoService.class
 com\murakib\attendance\config\AppVersion.class
 com\murakib\attendance\service\CameraService.class
 com\murakib\attendance\service\ShiftScheduleService$ShiftEvaluation.class
+com\murakib\attendance\service\UpdateService$1.class
 com\murakib\attendance\repository\EmployeeRepository.class
 com\murakib\attendance\model\Employee.class
 com\murakib\attendance\service\AttendanceService$ScanResult.class

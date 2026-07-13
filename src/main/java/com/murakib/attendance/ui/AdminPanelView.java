@@ -510,7 +510,6 @@ public class AdminPanelView {
 
         TextField deviceName = field("device_name");
         TextField botToken = ltrField("bot_token");
-        TextField chatId = ltrField("chat_id");
         TextField cooldown = ltrField("cooldown");
         TextField photoDelay = ltrField("photo_delay");
         TextField cameraId = ltrField("camera_id");
@@ -523,7 +522,6 @@ public class AdminPanelView {
             SettingsRepository s = context.settings();
             deviceName.setText(s.getOrDefault(SettingsRepository.DEVICE_NAME, ""));
             botToken.setText(s.getOrDefault(SettingsRepository.TELEGRAM_BOT_TOKEN, ""));
-            chatId.setText(s.getOrDefault(SettingsRepository.TELEGRAM_CHAT_ID, ""));
             cooldown.setText(s.getOrDefault(SettingsRepository.SCAN_COOLDOWN_SECONDS, "30"));
             photoDelay.setText(s.getOrDefault(SettingsRepository.PHOTO_DELAY_MS, "500"));
             cameraId.setText(s.getOrDefault(SettingsRepository.CAMERA_ID, "0"));
@@ -535,7 +533,6 @@ public class AdminPanelView {
         int row = 0;
         grid.add(new Label("اسم الجهاز:"), 0, row); grid.add(deviceName, 1, row++);
         grid.add(new Label("Telegram Bot Token:"), 0, row); grid.add(botToken, 1, row++);
-        grid.add(new Label("Telegram Chat ID:"), 0, row); grid.add(chatId, 1, row++);
         grid.add(new Label("مهلة منع التكرار (ث):"), 0, row); grid.add(cooldown, 1, row++);
         grid.add(new Label("تأخير التقاط الصورة (ms):"), 0, row); grid.add(photoDelay, 1, row++);
         grid.add(new Label("رقم الكاميرا:"), 0, row); grid.add(cameraId, 1, row++);
@@ -552,7 +549,6 @@ public class AdminPanelView {
                 SettingsRepository s = context.settings();
                 s.set(SettingsRepository.DEVICE_NAME, deviceName.getText());
                 s.set(SettingsRepository.TELEGRAM_BOT_TOKEN, normalizeBotToken(botToken.getText()));
-                s.set(SettingsRepository.TELEGRAM_CHAT_ID, chatId.getText().trim());
                 s.set(SettingsRepository.SCAN_COOLDOWN_SECONDS, cooldown.getText());
                 s.set(SettingsRepository.PHOTO_DELAY_MS, photoDelay.getText());
                 s.set(SettingsRepository.CAMERA_ID, cameraId.getText());
@@ -572,7 +568,7 @@ public class AdminPanelView {
         testTgBtn.setOnAction(e -> {
             String token = normalizeBotToken(botToken.getText());
             botToken.setText(token);
-            var result = context.telegram().testConnection(token, chatId.getText());
+            var result = context.telegram().testConnection(token);
             statusLabel.setText(result.success() ? "✅ " + result.message() : "❌ " + result.message());
         });
 

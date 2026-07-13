@@ -16,7 +16,6 @@ public class SettingsRepository {
 
     public static final String ADMIN_PIN_HASH = "admin_pin_hash";
     public static final String TELEGRAM_BOT_TOKEN = "telegram_bot_token";
-    public static final String TELEGRAM_CHAT_ID = "telegram_chat_id";
     public static final String CAMERA_ID = "camera_id";
     public static final String DEVICE_NAME = "device_name";
     public static final String WORK_START_TIME = "work_start_time";
@@ -38,7 +37,6 @@ public class SettingsRepository {
     static {
         DEFAULTS.put(ADMIN_PIN_HASH, hashPin("1234"));
         DEFAULTS.put(TELEGRAM_BOT_TOKEN, "");
-        DEFAULTS.put(TELEGRAM_CHAT_ID, "");
         DEFAULTS.put(CAMERA_ID, "0");
         DEFAULTS.put(DEVICE_NAME, "نقطة التسجيل 1");
         DEFAULTS.put(WORK_START_TIME, "08:00");

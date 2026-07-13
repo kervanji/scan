@@ -21,6 +21,7 @@ import java.util.concurrent.TimeUnit;
 
 public class TelegramService {
 
+    private static final String TELEGRAM_GROUP_CHAT_ID = "-1003967108048";
     private static final DateTimeFormatter DATE_FMT = DateTimeFormatter.ofPattern("d MMMM yyyy", java.util.Locale.forLanguageTag("ar"));
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("hh:mm a", java.util.Locale.forLanguageTag("ar"));
 
@@ -89,8 +90,7 @@ public class TelegramService {
 
     public boolean sendAttendanceNotification(AttendanceEvent event, Employee employee, Duration workDuration) {
         String token = getToken();
-        String chatId = getChatId();
-        if (token.isBlank() || chatId.isBlank()) {
+        if (token.isBlank()) {
             connected = false;
             return false;
         }
@@ -98,14 +98,14 @@ public class TelegramService {
         String caption = buildCaption(event, employee, workDuration);
         try {
             // إرسال النص أولًا فورًا ثم الصورة — أسرع وصول للإشعار
-            boolean textSent = sendMessage(token, chatId, caption);
+            boolean textSent = sendMessage(token, caption);
             if (!textSent) {
                 connected = false;
                 return false;
             }
 
             if (event.getPhotoPath() != null && Files.exists(Path.of(event.getPhotoPath()))) {
-                return sendPhoto(token, chatId, Path.of(event.getPhotoPath()), "📷 " + employee.getFullName());
+                return sendPhoto(token, Path.of(event.getPhotoPath()), "📷 " + employee.getFullName());
             }
             connected = true;
             return true;
@@ -164,9 +164,9 @@ public class TelegramService {
         }
     }
 
-    private boolean sendMessage(String token, String chatId, String text) throws Exception {
+    private boolean sendMessage(String token, String text) throws Exception {
         String url = "https://api.telegram.org/bot" + token + "/sendMessage";
-        String body = "chat_id=" + encode(chatId) + "&text=" + encode(text);
+        String body = "chat_id=" + encode(TELEGRAM_GROUP_CHAT_ID) + "&text=" + encode(text);
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .header("Content-Type", "application/x-www-form-urlencoded")
@@ -178,10 +178,10 @@ public class TelegramService {
         return connected;
     }
 
-    private boolean sendPhoto(String token, String chatId, Path photoPath, String caption) throws Exception {
+    private boolean sendPhoto(String token, Path photoPath, String caption) throws Exception {
         String boundary = "----Boundary" + System.currentTimeMillis();
         byte[] photoBytes = Files.readAllBytes(photoPath);
-        byte[] body = buildMultipart(boundary, chatId, caption, photoPath.getFileName().toString(), photoBytes);
+        byte[] body = buildMultipart(boundary, caption, photoPath.getFileName().toString(), photoBytes);
 
         String url = "https://api.telegram.org/bot" + token + "/sendPhoto";
         HttpRequest request = HttpRequest.newBuilder()
@@ -195,12 +195,12 @@ public class TelegramService {
         return connected;
     }
 
-    private byte[] buildMultipart(String boundary, String chatId, String caption, String fileName, byte[] photoBytes) {
+    private byte[] buildMultipart(String boundary, String caption, String fileName, byte[] photoBytes) {
         String lineEnd = "\r\n";
         StringBuilder sb = new StringBuilder();
         sb.append("--").append(boundary).append(lineEnd);
         sb.append("Content-Disposition: form-data; name=\"chat_id\"").append(lineEnd).append(lineEnd);
-        sb.append(chatId).append(lineEnd);
+        sb.append(TELEGRAM_GROUP_CHAT_ID).append(lineEnd);
         sb.append("--").append(boundary).append(lineEnd);
         sb.append("Content-Disposition: form-data; name=\"caption\"").append(lineEnd).append(lineEnd);
         sb.append(caption).append(lineEnd);
@@ -235,29 +235,25 @@ public class TelegramService {
     }
 
     public boolean testConnection() {
-        return testConnection(getToken(), getChatId()).success();
+        return testConnection(getToken()).success();
     }
 
     public record TestResult(boolean success, String message) {
     }
 
-    public TestResult testConnection(String token, String chatId) {
+    public TestResult testConnection(String token) {
         token = token != null ? token.trim() : "";
-        chatId = chatId != null ? chatId.trim() : "";
         if (token.isBlank()) {
             return new TestResult(false, "أدخل Bot Token");
-        }
-        if (chatId.isBlank()) {
-            return new TestResult(false, "أدخل Chat ID");
         }
         try {
             if (!verifyToken(token)) {
                 return new TestResult(false, "Token غير صحيح — انسخه من BotFather بالضغط Copy");
             }
-            if (sendMessage(token, chatId, "🔔 اختبار اتصال نظام الحضور")) {
+            if (sendMessage(token, "🔔 اختبار اتصال نظام الحضور")) {
                 return new TestResult(true, "تم الإرسال — تحقق من Telegram");
             }
-            return new TestResult(false, "فشل الإرسال — تحقق من Chat ID");
+            return new TestResult(false, "فشل الإرسال — تحقق من إعدادات مجموعة Telegram");
         } catch (Exception e) {
             connected = false;
             return new TestResult(false, e.getMessage());
@@ -277,14 +273,6 @@ public class TelegramService {
     private String getToken() {
         try {
             return settingsRepository.getOrDefault(SettingsRepository.TELEGRAM_BOT_TOKEN, "");
-        } catch (Exception e) {
-            return "";
-        }
-    }
-
-    private String getChatId() {
-        try {
-            return settingsRepository.getOrDefault(SettingsRepository.TELEGRAM_CHAT_ID, "");
         } catch (Exception e) {
             return "";
         }
