@@ -1,7 +1,7 @@
 {
   "version": "1.0.5",
   "downloadUrl": "https://github.com/kervanji/scan/releases/download/v1.0.5/qr-attendance-1.0.5-win.zip",
-  "sha256": "",
+  "sha256": "1d963048c11788b315a298bb4eace5ec3822aebcd1c0bda1714ee3bfc3d081b2",
   "releaseNotes": "تبسيط إعداد Telegram — Bot Token فقط مع إرسال تلقائي لمجموعة محددة مسبقاً.",
   "mandatory": false,
   "minVersion": "1.0.0"
