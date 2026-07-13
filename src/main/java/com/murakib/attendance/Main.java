@@ -22,11 +22,17 @@ public class Main extends Application {
                 com.murakib.attendance.repository.SettingsRepository.KIOSK_MODE, false
         );
 
-        Scene scene = new Scene(mainView.getRoot(), 960, 720);
+        Scene scene = new Scene(mainView.getRoot(), MainView.WINDOW_WIDTH, MainView.WINDOW_HEIGHT);
         scene.getStylesheets().add(getClass().getResource("/styles.css").toExternalForm());
 
         stage.setTitle(AppVersion.appName() + " v" + AppVersion.current());
         stage.setScene(scene);
+        if (!kiosk) {
+            stage.setMinWidth(MainView.WINDOW_WIDTH);
+            stage.setMinHeight(MainView.WINDOW_HEIGHT);
+            stage.setWidth(MainView.WINDOW_WIDTH);
+            stage.setHeight(MainView.WINDOW_HEIGHT);
+        }
         if (kiosk) {
             stage.initStyle(StageStyle.UNDECORATED);
             stage.setFullScreen(true);

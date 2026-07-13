@@ -30,6 +30,11 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class MainView {
 
+    public static final double WINDOW_WIDTH = 740;
+    public static final double WINDOW_HEIGHT = 900;
+    public static final double CAMERA_WIDTH = 580;
+    public static final double CAMERA_HEIGHT = 435;
+
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("hh:mm a", Locale.forLanguageTag("ar"));
 
     private final ApplicationContext context;
@@ -62,13 +67,14 @@ public class MainView {
         Label title = new Label("نظام تسجيل الحضور");
         title.getStyleClass().add("title-label");
 
-        cameraView.setFitWidth(640);
-        cameraView.setFitHeight(480);
+        cameraView.setFitWidth(CAMERA_WIDTH);
+        cameraView.setFitHeight(CAMERA_HEIGHT);
         cameraView.setPreserveRatio(true);
         cameraView.getStyleClass().add("camera-view");
 
         StackPane cameraPane = new StackPane(cameraView);
-        cameraPane.setPrefSize(640, 480);
+        cameraPane.setPrefSize(CAMERA_WIDTH, CAMERA_HEIGHT);
+        cameraPane.setMaxSize(CAMERA_WIDTH, CAMERA_HEIGHT);
 
         ToggleButton checkInBtn = new ToggleButton("تسجيل دخول");
         checkInBtn.getStyleClass().add("btn-checkin");
@@ -87,19 +93,25 @@ public class MainView {
         modeBox.setAlignment(Pos.CENTER);
 
         messageLabel.setWrapText(true);
-        messageLabel.setMaxWidth(640);
+        messageLabel.setMaxWidth(CAMERA_WIDTH);
+        messageLabel.setMinHeight(48);
         messageLabel.setAlignment(Pos.CENTER);
 
         instructionLabel.getStyleClass().add("subtitle-label");
         lastEventLabel.getStyleClass().add("subtitle-label");
+        lastEventLabel.setWrapText(true);
+        lastEventLabel.setMaxWidth(CAMERA_WIDTH);
+        lastEventLabel.setMinHeight(32);
+        lastEventLabel.setAlignment(Pos.CENTER);
 
         Button adminBtn = new Button("لوحة الإدارة");
         adminBtn.getStyleClass().add("btn-admin");
         adminBtn.setOnAction(e -> openAdminPanel());
 
-        VBox center = new VBox(16, title, cameraPane, instructionLabel, modeBox, messageLabel, lastEventLabel);
+        VBox center = new VBox(12, title, cameraPane, instructionLabel, modeBox, messageLabel, lastEventLabel);
         center.setAlignment(Pos.TOP_CENTER);
-        center.setPadding(new Insets(10));
+        center.setPadding(new Insets(8));
+        center.setFillWidth(false);
 
         HBox statusBar = buildStatusBar();
         BorderPane.setMargin(adminBtn, new Insets(0, 0, 0, 10));
