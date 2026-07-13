@@ -6,7 +6,7 @@
 
     <groupId>com.murakib</groupId>
     <artifactId>qr-attendance</artifactId>
-    <version>1.0.4</version>
+    <version>1.0.5</version>
     <packaging>jar</packaging>
     <name>Murakib Attendance</name>
     <description>نظام حضور وانصراف الموظفين عبر QR Code</description>

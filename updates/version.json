@@ -1,8 +1,8 @@
 {
-  "version": "1.0.4",
-  "downloadUrl": "https://github.com/kervanji/scan/releases/download/v1.0.4/qr-attendance-1.0.4-win.zip",
-  "sha256": "e0309cf65a5cae75e21a479a7d5f10d8483d652bb4b05af93b5324a117bf2aaf",
-  "releaseNotes": "تخصيص شفتات وأيام العمل للموظفين، إشعارات التأخير والتغطية في Telegram.",
+  "version": "1.0.5",
+  "downloadUrl": "https://github.com/kervanji/scan/releases/download/v1.0.5/qr-attendance-1.0.5-win.zip",
+  "sha256": "",
+  "releaseNotes": "تبسيط إعداد Telegram — Bot Token فقط مع إرسال تلقائي لمجموعة محددة مسبقاً.",
   "mandatory": false,
   "minVersion": "1.0.0"
 }
